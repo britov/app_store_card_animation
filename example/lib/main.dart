@@ -1,6 +1,7 @@
 import 'dart:developer';
 
-import 'package:cupertino_icons/cupertino_icons.dart';
+import 'package:app_store_card_animation/src/tween.dart';
+import 'package:app_store_card_animation/app_store_card_animation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -47,12 +48,39 @@ class _MyHomePageState extends State<MyHomePage> {
           top: true,
           child: ListView(
             children: [
-              for (int i = 0; i < 10; i++) //TemplateCard(index: i),
+              for (int i = 0; i < 10; i++)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
-                  child: AppStoreCard(),
+                  child: AppStoreCard(
+                    mainCardBuilder: (BuildContext context) {
+                      return Container();
+                    },
+                    contentCardBuilder: (BuildContext context,
+                        ScrollController scrollController,
+                        ScrollPhysics? scrollPhysics,
+                        double topScrollOffset) {
+                      return ListView(
+                        controller: scrollController,
+                        physics: scrollPhysics,
+                        padding: EdgeInsets.zero,
+                        children: [
+                          SizedBox(
+                            height: topScrollOffset,
+                          ),
+                          for (int i = 0; i < 20; i++)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 18),
+                              child: TemplateCard(
+                                index: i,
+                                detailCard: true,
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              for (int i = 0; i < 20; i++) TemplateCard(index: i),
             ],
           ),
         ),
@@ -62,26 +90,39 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class AppStoreCard extends StatelessWidget {
-  final heroTag = UniqueKey();
+  final _heroTag = UniqueKey();
+  final _scrollController = ScrollController();
+
+  final MainCardBuilder mainCardBuilder;
+  final ContentCardBuilder contentCardBuilder;
 
   AppStoreCard({
     Key? key,
+    required this.mainCardBuilder,
+    required this.contentCardBuilder,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        _scrollController.jumpTo(0);
         Navigator.of(context).push(
           PageRouteBuilder(
-            pageBuilder: (context, _, __) => DetailPage(heroTag: heroTag),
+            pageBuilder: (context, _, __) => DetailPage(
+              heroTag: _heroTag,
+              heroContent: HeroContent(mainCardBuilder, contentCardBuilder,
+                  HeroContentState.fullscreen,
+                  scrollController: _scrollController,
+                  animation: const AlwaysStoppedAnimation(1)),
+            ),
             transitionDuration: const Duration(milliseconds: 1200),
             reverseTransitionDuration: const Duration(milliseconds: 1400),
           ),
         );
       },
       child: Hero(
-        tag: heroTag,
+        tag: _heroTag,
         createRectTween: (begin, end) => CardHeroTween(
           begin: begin,
           end: end,
@@ -93,12 +134,19 @@ class AppStoreCard extends StatelessWidget {
             fromHeroContext, toHeroContext) {
           return Material(
             child: HeroContent(
+              mainCardBuilder,
+              contentCardBuilder,
+              HeroContentState.flight,
+              scrollController: _scrollController,
               animation: animation,
               flightDirection: flightDirection,
             ),
           );
         },
-        child:  HeroContent(animation: AlwaysStoppedAnimation(0)),
+        child: HeroContent(
+            mainCardBuilder, contentCardBuilder, HeroContentState.card,
+            scrollController: _scrollController,
+            animation: const AlwaysStoppedAnimation(0)),
       ),
     );
   }
@@ -136,9 +184,11 @@ class TemplateCard extends StatelessWidget {
 }
 
 class DetailPage extends StatefulWidget {
-  const DetailPage({Key? key, required this.heroTag}) : super(key: key);
+  const DetailPage({Key? key, required this.heroTag, required this.heroContent})
+      : super(key: key);
 
   final Object heroTag;
+  final HeroContent heroContent;
 
   @override
   State<DetailPage> createState() => _DetailPageState();
@@ -178,44 +228,9 @@ class _DetailPageState extends State<DetailPage> {
           begin: begin,
           end: end,
         ),
-        child:  HeroContent(animation: AlwaysStoppedAnimation(1)),
+        child: widget.heroContent,
       ),
     );
-  }
-}
-
-class CardHeroTween extends Tween<Rect?> {
-  CardHeroTween({super.begin, super.end});
-
-  /// How changed size of card
-  late final sizeTween = CurveTween(curve: Curves.linear);
-
-  /// Originally, card resizing ends before the card finishes moving.
-  /// [_sizeGrowPeriod] sets a time period for resizing while the card is moving
-  final _sizeGrowPeriod = 0.4;
-
-  /// How is moving top of the card.
-  late final verticalMovingTween =
-      CurveTween(curve: const ElasticOutCurve(0.7));
-
-  @override
-  Rect? transform(double t) {
-    final sizeValue = sizeTween.transform(math.min(1, t / _sizeGrowPeriod));
-    final verticalMovingValue = verticalMovingTween.transform(t);
-
-    final top = lerpDouble(
-      begin?.top,
-      end?.top,
-      verticalMovingValue,
-    );
-
-    final sizeRect = Rect.lerp(begin, end, sizeValue);
-
-    if (top == null || sizeRect == null) {
-      return null;
-    }
-
-    return Rect.fromLTWH(sizeRect.left, top, sizeRect.width, sizeRect.height);
   }
 }
 
@@ -228,14 +243,24 @@ class ExapmpleCard extends StatelessWidget {
   }
 }
 
+enum HeroContentState { card, flight, fullscreen }
+
 class HeroContent extends AnimatedWidget {
-   HeroContent({
+  const HeroContent(
+    this.mainCardBuilder,
+    this.contentCardBuilder,
+    this.state, {
     Key? key,
     required this.animation,
+    required this.scrollController,
     this.cardHeight = 400,
     this.flightDirection = HeroFlightDirection.push,
     // this.dividerColor,
   }) : super(key: key, listenable: animation);
+
+  final MainCardBuilder mainCardBuilder;
+  final ContentCardBuilder contentCardBuilder;
+  final HeroContentState state;
 
   final HeroFlightDirection flightDirection;
   final Animation<double> animation;
@@ -245,7 +270,11 @@ class HeroContent extends AnimatedWidget {
   final double cardHeight;
   static const _cardHeightExtend = 40.0;
 
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController scrollController;
+
+  ScrollPhysics? get scrollPhysics => state != HeroContentState.fullscreen
+      ? const NeverScrollableScrollPhysics()
+      : null;
 
   final _sizeEnd = 0.4;
 
@@ -261,7 +290,7 @@ class HeroContent extends AnimatedWidget {
             sizeAnimationValue +
         totalCardHeight;
 
-    log('$flightDirection ${animation.value} sizeAnimationValue $sizeAnimationValue h $h');
+    // log('$flightDirection ${animation.value} sizeAnimationValue $sizeAnimationValue h $h');
 
     // final topPadding = _paddingValue +
     //     MediaQuery.of(context).viewPadding.top * animation.value;
@@ -281,233 +310,249 @@ class HeroContent extends AnimatedWidget {
           ),
           child: Stack(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    height: totalCardHeight,
-                    // decoration: BoxDecoration(
-                    //   image: const DecorationImage(
-                    //     image: AssetImage('assets/images/image.jpg'),
-                    //     fit: BoxFit.cover,
-                    //   ),
-                    //   borderRadius: BorderRadius.vertical(
-                    //     top: const Radius.circular(15),
-                    //     bottom: Radius.circular(15 * (1 - sizeAnimationValue)),
-                    //   ),
-                    // ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width,
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Positioned.fill(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.vertical(
-                                  top: const Radius.circular(15),
-                                  bottom: Radius.circular(
-                                      15 * (1 - sizeAnimationValue)),
-                                ),
-                                child: OverflowBox(
-                                  maxHeight: totalCardHeight,
-                                  maxWidth: MediaQuery.of(context).size.width,
-                                  child: const Image(
-                                    image:
-                                        AssetImage('assets/images/image.jpg'),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
+              ScrollBuilder(
+                  scrollController: scrollController,
+                  builder: (context, offset) {
+                    double top =
+                        0.0 - (math.min(totalCardHeight, offset ?? 0.0));
+                    if (top != 0.0 &&
+                        animation.status == AnimationStatus.reverse) {
+                      top = lerpDouble(0, top, sizeAnimationValue)!;
+                    }
+
+                    return Positioned(
+                      top: top,
+                      left: 0,
+                      right: 0,
+                      height: totalCardHeight,
+                      child: SizedBox(
+                        height: totalCardHeight,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width,
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            child: Stack(
+                              alignment: Alignment.center,
                               children: [
-                                // Padding(
-                                //   padding: EdgeInsets.only(
-                                //     left: _paddingValue,
-                                //     top: topPadding,
-                                //     right: _paddingValue,
-                                //   ),
-                                //   child: Text(
-                                //     'LIFE HACK',
-                                //     style: Theme.of(context)
-                                //         .textTheme
-                                //         .bodyLarge
-                                //         ?.copyWith(
-                                //           color: Colors.black54,
-                                //         ),
-                                //     textAlign: TextAlign.left,
-                                //   ),
-                                // ),
-                                // Padding(
-                                //   padding: const EdgeInsets.only(
-                                //     left: _paddingValue,
-                                //     top: _paddingValue,
-                                //     right: _paddingValue,
-                                //   ),
-                                //   child: Text(
-                                //     'Can you master a\nnew language?',
-                                //     style: Theme.of(context).textTheme.displaySmall,
-                                //     textAlign: TextAlign.left,
-                                //   ),
-                                // ),
-
-                                const Spacer(),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: _paddingValue,
-                                    bottom: _paddingValue,
-                                    right: _paddingValue,
-                                  ),
-                                  child: Text(
-                                    'GAME\nOF THE\nDAY',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headline3
-                                        ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800),
-                                    textAlign: TextAlign.left,
-                                  ),
-                                ),
-
-                                Container(
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    color: blackColor,
+                                Positioned.fill(
+                                  child: ClipRRect(
                                     borderRadius: BorderRadius.vertical(
+                                      top: const Radius.circular(15),
                                       bottom: Radius.circular(
                                           15 * (1 - sizeAnimationValue)),
                                     ),
+                                    child: OverflowBox(
+                                      maxHeight: totalCardHeight,
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width,
+                                      child: const Image(
+                                        image: AssetImage(
+                                            'assets/images/image.jpg'),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(
-                                              _paddingValue),
-                                          child: Row(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                child: Image.asset(
-                                                  'assets/images/logo.jpg',
-                                                  height: 50,
-                                                  width: 50,
-                                                ),
-                                              ),
-                                              const SizedBox(
-                                                width: 8,
-                                              ),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Cooking Madness-\nKitchen Frenzy',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyLarge
-                                                          ?.copyWith(
-                                                            color: Colors.white,
-                                                          ),
-                                                    ),
-                                                    Text(
-                                                      'Cook food in restaurants!',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium
-                                                          ?.copyWith(
-                                                            color: Colors.white,
-                                                          ),
-                                                    )
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                ),
+                                Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Padding(
+                                    //   padding: EdgeInsets.only(
+                                    //     left: _paddingValue,
+                                    //     top: topPadding,
+                                    //     right: _paddingValue,
+                                    //   ),
+                                    //   child: Text(
+                                    //     'LIFE HACK',
+                                    //     style: Theme.of(context)
+                                    //         .textTheme
+                                    //         .bodyLarge
+                                    //         ?.copyWith(
+                                    //           color: Colors.black54,
+                                    //         ),
+                                    //     textAlign: TextAlign.left,
+                                    //   ),
+                                    // ),
+                                    // Padding(
+                                    //   padding: const EdgeInsets.only(
+                                    //     left: _paddingValue,
+                                    //     top: _paddingValue,
+                                    //     right: _paddingValue,
+                                    //   ),
+                                    //   child: Text(
+                                    //     'Can you master a\nnew language?',
+                                    //     style: Theme.of(context).textTheme.displaySmall,
+                                    //     textAlign: TextAlign.left,
+                                    //   ),
+                                    // ),
+
+                                    const Spacer(),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: _paddingValue,
+                                        bottom: _paddingValue,
+                                        right: _paddingValue,
+                                      ),
+                                      child: Text(
+                                        'GAME\nOF THE\nDAY',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline3
+                                            ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w800),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                    ),
+
+                                    Container(
+                                      height: 90,
+                                      decoration: BoxDecoration(
+                                        color: blackColor,
+                                        borderRadius: BorderRadius.vertical(
+                                          bottom: Radius.circular(
+                                              15 * (1 - sizeAnimationValue)),
                                         ),
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: _paddingValue,
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            const Text(''),
-                                            InputChip(
-                                              onPressed: () {},
-                                              label: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                  _paddingValue),
+                                              child: Row(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                    child: Image.asset(
+                                                      'assets/images/logo.jpg',
+                                                      height: 50,
+                                                      width: 50,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(
+                                                    width: 8,
+                                                  ),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          'Cooking Madness-\nKitchen Frenzy',
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .bodyLarge
+                                                                  ?.copyWith(
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                        ),
+                                                        Text(
+                                                          'Cook food in restaurants!',
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .bodyMedium
+                                                                  ?.copyWith(
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                        )
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: _paddingValue,
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                const Text(''),
+                                                InputChip(
+                                                  onPressed: () {},
+                                                  label: Padding(
+                                                    padding: const EdgeInsets
+                                                            .symmetric(
                                                         horizontal: 16.0),
-                                                child: Text(
-                                                  'GET',
+                                                    child: Text(
+                                                      'GET',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                            color: Colors.blue,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  backgroundColor: Colors.white,
+                                                ),
+                                                Text(
+                                                  'In-app purchases',
                                                   style: Theme.of(context)
                                                       .textTheme
-                                                      .titleMedium
+                                                      .caption
                                                       ?.copyWith(
-                                                        color: Colors.blue,
-                                                        fontWeight:
-                                                            FontWeight.w700,
+                                                        color: Colors.white,
                                                       ),
                                                 ),
-                                              ),
-                                              backgroundColor: Colors.white,
+                                              ],
                                             ),
-                                            Text(
-                                              'In-app purchases',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .caption
-                                                  ?.copyWith(
-                                                    color: Colors.white,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                )
+                                          )
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: FadeTransition(
-                      opacity: animation.drive(InternalTween(
-                        width: 0.4,
-                        reverse: flightDirection == HeroFlightDirection.pop,
-                      )),
-                      child: ListView(
-                        controller: _scrollController,
-                        padding: EdgeInsets.zero,
-                        children: [
-                          for (int i = 0; i < 20; i++)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: _paddingValue),
-                              child: TemplateCard(
-                                index: i,
-                                detailCard: true,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  )
-                ],
+                    );
+                  }),
+              Positioned.fill(
+                child: FadeTransition(
+                  opacity: animation.drive(InternalTween(
+                    width: 0.4,
+                    reverse: flightDirection == HeroFlightDirection.pop,
+                  )),
+                  child: contentCardBuilder(context, scrollController,
+                      scrollPhysics, totalCardHeight),
+                  // child: ListView(
+                  //   controller: scrollController,
+                  //   physics: scrollPhysics,
+                  //   padding: EdgeInsets.zero,
+                  //   children: [
+                  //     SizedBox(
+                  //       height: totalCardHeight,
+                  //     ),
+                  //     for (int i = 0; i < 20; i++)
+                  //       Padding(
+                  //         padding: const EdgeInsets.symmetric(
+                  //             horizontal: _paddingValue),
+                  //         child: TemplateCard(
+                  //           index: i,
+                  //           detailCard: true,
+                  //         ),
+                  //       ),
+                  //   ],
+                  // ),
+                ),
               ),
               Positioned(
                 top: _paddingValue * 2,
@@ -571,5 +616,54 @@ class InternalTween extends Tween<double> {
       if (t <= (end! - width)) return begin!;
       return (t - (end! - width)) / width;
     }
+  }
+}
+
+class ScrollBuilder extends StatefulWidget {
+  const ScrollBuilder({
+    Key? key,
+    required this.builder,
+    required this.scrollController,
+  }) : super(key: key);
+
+  final Widget Function(BuildContext context, double? extentBefore) builder;
+  final ScrollController scrollController;
+
+  @override
+  State<ScrollBuilder> createState() => _ScrollBuilderState();
+}
+
+class _ScrollBuilderState extends State<ScrollBuilder> {
+  double? extentBefore;
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context, extentBefore);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController.addListener(onUpdate);
+    onUpdate();
+  }
+
+  void onUpdate() {
+    if (!widget.scrollController.hasClients) {
+      return;
+    }
+    final newExtentBefore =
+        widget.scrollController.positions.first.extentBefore;
+    if (newExtentBefore != extentBefore) {
+      setState(() {
+        extentBefore = newExtentBefore;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    widget.scrollController.removeListener(onUpdate);
   }
 }
