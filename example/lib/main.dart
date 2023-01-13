@@ -82,7 +82,7 @@ class AppStoreCard extends StatelessWidget {
       },
       child: Hero(
         tag: heroTag,
-        createRectTween: (begin, end) => CustomHeroTween(
+        createRectTween: (begin, end) => CardHeroTween(
           begin: begin,
           end: end,
         ),
@@ -92,11 +92,13 @@ class AppStoreCard extends StatelessWidget {
         flightShuttleBuilder: (flightContext, animation, flightDirection,
             fromHeroContext, toHeroContext) {
           return Material(
-            child: HeroContainer(
-                animation: animation, flightDirection: flightDirection),
+            child: HeroContent(
+              animation: animation,
+              flightDirection: flightDirection,
+            ),
           );
         },
-        child: const HeroContainer(animation: AlwaysStoppedAnimation(0)),
+        child:  HeroContent(animation: AlwaysStoppedAnimation(0)),
       ),
     );
   }
@@ -172,77 +174,92 @@ class _DetailPageState extends State<DetailPage> {
       backgroundColor: Colors.transparent,
       body: Hero(
         tag: widget.heroTag,
-        createRectTween: (begin, end) => CustomHeroTween(
+        createRectTween: (begin, end) => CardHeroTween(
           begin: begin,
           end: end,
         ),
-        child: const HeroContainer(animation: AlwaysStoppedAnimation(1)),
+        child:  HeroContent(animation: AlwaysStoppedAnimation(1)),
       ),
     );
   }
 }
 
-class CustomHeroTween extends Tween<Rect?> {
-  CustomHeroTween({super.begin, super.end});
+class CardHeroTween extends Tween<Rect?> {
+  CardHeroTween({super.begin, super.end});
 
-  /// curveTweenX - for transform horizontal coordinates
-  /// curveTweenY - for transform vertical coordinates
-  late final curveTweenX = CurveTween(curve: Curves.linear);
-  late final curveTweenY = CurveTween(curve: const ElasticOutCurve(0.7));
-  final _xEnd = 0.4;
+  /// How changed size of card
+  late final sizeTween = CurveTween(curve: Curves.linear);
+
+  /// Originally, card resizing ends before the card finishes moving.
+  /// [_sizeGrowPeriod] sets a time period for resizing while the card is moving
+  final _sizeGrowPeriod = 0.4;
+
+  /// How is moving top of the card.
+  late final verticalMovingTween =
+      CurveTween(curve: const ElasticOutCurve(0.7));
 
   @override
   Rect? transform(double t) {
-    final x = curveTweenX.transform(math.min(1, t / _xEnd));
-    final y = curveTweenY.transform(t);
+    final sizeValue = sizeTween.transform(math.min(1, t / _sizeGrowPeriod));
+    final verticalMovingValue = verticalMovingTween.transform(t);
 
-    final verticalRect = Rect.lerp(begin, end, y);
-    final horizontalRect = Rect.lerp(begin, end, x);
+    final top = lerpDouble(
+      begin?.top,
+      end?.top,
+      verticalMovingValue,
+    );
 
-    if (horizontalRect == null || verticalRect == null) {
+    final sizeRect = Rect.lerp(begin, end, sizeValue);
+
+    if (top == null || sizeRect == null) {
       return null;
     }
 
-    // if (verticalRect.size.height < 400) {
-    //   print('object');
-    // }
-
-    return Rect.fromLTWH(horizontalRect.left, verticalRect.top,
-        horizontalRect.width, horizontalRect.height);
+    return Rect.fromLTWH(sizeRect.left, top, sizeRect.width, sizeRect.height);
   }
 }
 
-class HeroContainer extends AnimatedWidget {
-  const HeroContainer({
+class ExapmpleCard extends StatelessWidget {
+  const ExapmpleCard({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
+  }
+}
+
+class HeroContent extends AnimatedWidget {
+   HeroContent({
     Key? key,
     required this.animation,
+    this.cardHeight = 400,
     this.flightDirection = HeroFlightDirection.push,
-    this.dividerColor,
+    // this.dividerColor,
   }) : super(key: key, listenable: animation);
 
   final HeroFlightDirection flightDirection;
   final Animation<double> animation;
-  final Color? dividerColor;
+
+  // final Color? dividerColor;
   static const _paddingValue = 16.0;
-  static const _cardHeight = 400.0;
+  final double cardHeight;
   static const _cardHeightExtend = 40.0;
+
+  final ScrollController _scrollController = ScrollController();
 
   final _sizeEnd = 0.4;
 
   @override
   Widget build(BuildContext context) {
-    // final sizeAnimationValue = math.min(1.0, animation.value / _sizeEnd);
     final sizeAnimationValue = flightDirection == HeroFlightDirection.push
         ? math.min(1.0, animation.value / _sizeEnd)
         : (1.0 - math.min(1.0, (1.0 - animation.value) / _sizeEnd));
 
     var cardHeightExtendValue = _cardHeightExtend * sizeAnimationValue;
-    final h = (MediaQuery.of(context).size.height -
-                _cardHeight -
-                cardHeightExtendValue) *
+    final totalCardHeight = cardHeight + cardHeightExtendValue;
+    final h = (MediaQuery.of(context).size.height - totalCardHeight) *
             sizeAnimationValue +
-        _cardHeight +
-        cardHeightExtendValue;
+        totalCardHeight;
 
     log('$flightDirection ${animation.value} sizeAnimationValue $sizeAnimationValue h $h');
 
@@ -268,7 +285,7 @@ class HeroContainer extends AnimatedWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    height: _cardHeight + cardHeightExtendValue,
+                    height: totalCardHeight,
                     // decoration: BoxDecoration(
                     //   image: const DecorationImage(
                     //     image: AssetImage('assets/images/image.jpg'),
@@ -295,7 +312,7 @@ class HeroContainer extends AnimatedWidget {
                                       15 * (1 - sizeAnimationValue)),
                                 ),
                                 child: OverflowBox(
-                                  maxHeight: _cardHeight + _cardHeightExtend,
+                                  maxHeight: totalCardHeight,
                                   maxWidth: MediaQuery.of(context).size.width,
                                   child: const Image(
                                     image:
@@ -469,15 +486,14 @@ class HeroContainer extends AnimatedWidget {
                   ),
                   Expanded(
                     child: FadeTransition(
-                      opacity: animation,
+                      opacity: animation.drive(InternalTween(
+                        width: 0.4,
+                        reverse: flightDirection == HeroFlightDirection.pop,
+                      )),
                       child: ListView(
+                        controller: _scrollController,
                         padding: EdgeInsets.zero,
                         children: [
-                          if (dividerColor != null)
-                            Divider(
-                              color: dividerColor,
-                              height: 1,
-                            ),
                           for (int i = 0; i < 20; i++)
                             Padding(
                               padding: const EdgeInsets.symmetric(
@@ -525,5 +541,35 @@ class HeroContainer extends AnimatedWidget {
         ),
       ),
     );
+  }
+}
+
+class InternalTween extends Tween<double> {
+  InternalTween({
+    required this.width,
+    bool reverse = false,
+  })  : isGrow = !reverse,
+        assert(width <= 1 && width >= 0),
+        super(
+          begin: 0,
+          end: 1,
+        );
+
+  late final double width;
+
+  bool isGrow;
+
+  @override
+  double lerp(double t) {
+    if (t == 0) isGrow = true;
+    if (t == 1) isGrow = false;
+
+    if (isGrow) {
+      if (t >= width) return end!;
+      return t / width;
+    } else {
+      if (t <= (end! - width)) return begin!;
+      return (t - (end! - width)) / width;
+    }
   }
 }
