@@ -36,3 +36,35 @@ class CardHeroTween extends Tween<Rect?> {
     return Rect.fromLTWH(sizeRect.left, top, sizeRect.width, sizeRect.height);
   }
 }
+
+
+
+class InternalTween extends Tween<double> {
+  InternalTween({
+    required this.width,
+    bool reverse = false,
+  })  : isGrow = !reverse,
+        assert(width <= 1 && width >= 0),
+        super(
+        begin: 0,
+        end: 1,
+      );
+
+  late final double width;
+
+  bool isGrow;
+
+  @override
+  double lerp(double t) {
+    if (t == 0) isGrow = true;
+    if (t == 1) isGrow = false;
+
+    if (isGrow) {
+      if (t >= width) return end!;
+      return t / width;
+    } else {
+      if (t <= (end! - width)) return begin!;
+      return (t - (end! - width)) / width;
+    }
+  }
+}
