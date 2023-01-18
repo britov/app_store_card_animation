@@ -5,20 +5,7 @@ import 'package:flutter/material.dart';
 import 'src/fullscreen_page.dart';
 import 'src/hero_container.dart';
 import 'src/tween.dart';
-
-typedef MainCardBuilder = Widget Function(
-  BuildContext context,
-  double animationValue,
-  double heightValue, // TODO: may be we can delete it
-);
-
-typedef ContentCardBuilder = Widget Function(
-  BuildContext context,
-  ScrollController scrollController,
-  ScrollPhysics? scrollPhysics,
-  double topScrollOffset,
-);
-
+import 'src/types_def.dart';
 
 class AppStoreCard extends StatelessWidget {
   final _heroTag = UniqueKey();
@@ -27,17 +14,22 @@ class AppStoreCard extends StatelessWidget {
   final MainCardBuilder mainCardBuilder;
   final ContentCardBuilder contentCardBuilder;
   final Color backgroundColor;
+  final double mainContentExpandedTopPadding;
 
   AppStoreCard({
     Key? key,
     required this.mainCardBuilder,
     required this.contentCardBuilder,
+    this.mainContentExpandedTopPadding = 0,
     this.backgroundColor = Colors.grey,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      borderRadius: const BorderRadius.all(
+        Radius.circular(15),
+      ),
       onTap: () {
         _scrollController.jumpTo(0);
         Navigator.of(context).push(
@@ -48,6 +40,7 @@ class AppStoreCard extends StatelessWidget {
                   HeroContentState.fullscreen,
                   backgroundColor: backgroundColor,
                   scrollController: _scrollController,
+                  mainContentExpandedTopPadding: mainContentExpandedTopPadding,
                   animation: const AlwaysStoppedAnimation(1)),
             ),
             transitionDuration: const Duration(milliseconds: 1200),
@@ -67,24 +60,29 @@ class AppStoreCard extends StatelessWidget {
         flightShuttleBuilder: (flightContext, animation, flightDirection,
             fromHeroContext, toHeroContext) {
           return Material(
+            color: Colors.transparent,
             child: HeroContent(
               mainCardBuilder,
               contentCardBuilder,
               backgroundColor: backgroundColor,
               HeroContentState.flight,
               scrollController: _scrollController,
+              mainContentExpandedTopPadding: mainContentExpandedTopPadding,
               animation: animation,
               flightDirection: flightDirection,
             ),
           );
         },
         child: HeroContent(
-            mainCardBuilder, contentCardBuilder, HeroContentState.card,
-            backgroundColor: backgroundColor,
-            scrollController: _scrollController,
-            animation: const AlwaysStoppedAnimation(0)),
+          mainCardBuilder,
+          contentCardBuilder,
+          HeroContentState.card,
+          backgroundColor: backgroundColor,
+          mainContentExpandedTopPadding: mainContentExpandedTopPadding,
+          scrollController: _scrollController,
+          animation: const AlwaysStoppedAnimation(0),
+        ),
       ),
     );
   }
 }
-

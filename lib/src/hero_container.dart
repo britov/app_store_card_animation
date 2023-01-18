@@ -3,25 +3,25 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../app_store_card_animation.dart';
 import 'scroll_builder.dart';
 import 'tween.dart';
+import 'types_def.dart';
 
 enum HeroContentState { card, flight, fullscreen }
 
 class HeroContent extends AnimatedWidget {
   const HeroContent(
-      this.mainCardBuilder,
-      this.contentCardBuilder,
-      this.state, {
-        Key? key,
-        required this.animation,
-        required this.scrollController,
-        required this.backgroundColor,
-        this.cardHeight = 400,
-        this.flightDirection = HeroFlightDirection.push,
-        // this.dividerColor,
-      }) : super(key: key, listenable: animation);
+    this.mainCardBuilder,
+    this.contentCardBuilder,
+    this.state, {
+    Key? key,
+    required this.animation,
+    required this.scrollController,
+    required this.backgroundColor,
+    this.cardHeight = 400,
+    required this.mainContentExpandedTopPadding,
+    this.flightDirection = HeroFlightDirection.push,
+  }) : super(key: key, listenable: animation);
 
   final MainCardBuilder mainCardBuilder;
   final ContentCardBuilder contentCardBuilder;
@@ -31,7 +31,7 @@ class HeroContent extends AnimatedWidget {
   final HeroFlightDirection flightDirection;
   final Animation<double> animation;
 
-  // final Color? dividerColor;
+  final double mainContentExpandedTopPadding;
   final double cardHeight;
   static const _cardHeightExtend = 40.0;
   static const _closeButtonPadding = EdgeInsets.only(top: 32, right: 16);
@@ -51,15 +51,11 @@ class HeroContent extends AnimatedWidget {
         : (1.0 - math.min(1.0, (1.0 - animation.value) / _sizeEnd));
 
     var cardHeightExtendValue = _cardHeightExtend * sizeAnimationValue;
-    final totalCardHeight = cardHeight + cardHeightExtendValue;
+    var topPadding = mainContentExpandedTopPadding * sizeAnimationValue;
+    final totalCardHeight = cardHeight + cardHeightExtendValue ;
     final h = (MediaQuery.of(context).size.height - totalCardHeight) *
-        sizeAnimationValue +
+            sizeAnimationValue +
         totalCardHeight;
-
-    // log('$flightDirection ${animation.value} sizeAnimationValue $sizeAnimationValue h $h');
-
-    // final topPadding = _paddingValue +
-    //     MediaQuery.of(context).viewPadding.top * animation.value;
 
     return Align(
       alignment: Alignment.topCenter,
@@ -85,7 +81,7 @@ class HeroContent extends AnimatedWidget {
                     }
 
                     return Positioned(
-                      top: top,
+                      top: top + topPadding,
                       left: 0,
                       right: 0,
                       height: totalCardHeight,
@@ -100,26 +96,7 @@ class HeroContent extends AnimatedWidget {
                     reverse: flightDirection == HeroFlightDirection.pop,
                   )),
                   child: contentCardBuilder(context, scrollController,
-                      scrollPhysics, totalCardHeight),
-                  // child: ListView(
-                  //   controller: scrollController,
-                  //   physics: scrollPhysics,
-                  //   padding: EdgeInsets.zero,
-                  //   children: [
-                  //     SizedBox(
-                  //       height: totalCardHeight,
-                  //     ),
-                  //     for (int i = 0; i < 20; i++)
-                  //       Padding(
-                  //         padding: const EdgeInsets.symmetric(
-                  //             horizontal: _paddingValue),
-                  //         child: TemplateCard(
-                  //           index: i,
-                  //           detailCard: true,
-                  //         ),
-                  //       ),
-                  //   ],
-                  // ),
+                      scrollPhysics, totalCardHeight + topPadding),
                 ),
               ),
               Positioned(
