@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 class MainCardView1 extends StatelessWidget {
-  const MainCardView1({Key? key, required this.animationValue, required this.heightValue}) : super(key: key);
+  const MainCardView1(
+      {Key? key, required this.animationValue, required this.heightValue})
+      : super(key: key);
 
   final double animationValue;
   final double heightValue;
@@ -19,8 +21,7 @@ class MainCardView1 extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.vertical(
               top: const Radius.circular(15),
-              bottom:
-              Radius.circular(15 * (1 - animationValue)),
+              bottom: Radius.circular(15 * (1 - animationValue)),
             ),
             child: OverflowBox(
               maxHeight: heightValue,
@@ -75,12 +76,8 @@ class MainCardView1 extends StatelessWidget {
                 ),
                 child: Text(
                   'GAME\nOF THE\nDAY',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline3
-                      ?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.headline3?.copyWith(
+                      color: Colors.white, fontWeight: FontWeight.w800),
                   textAlign: TextAlign.left,
                 ),
               ),
@@ -90,21 +87,18 @@ class MainCardView1 extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: blackColor,
                   borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(
-                        15 * (1 - animationValue)),
+                    bottom: Radius.circular(15 * (1 - animationValue)),
                   ),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.all(
-                            _paddingValue),
+                        padding: const EdgeInsets.all(_paddingValue),
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius:
-                              BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(10),
                               child: Image.asset(
                                 'assets/images/logo.jpg',
                                 height: 50,
@@ -116,8 +110,7 @@ class MainCardView1 extends StatelessWidget {
                             ),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'Cooking Madness-\nKitchen Frenzy',
@@ -125,17 +118,19 @@ class MainCardView1 extends StatelessWidget {
                                         .textTheme
                                         .bodyLarge
                                         ?.copyWith(
-                                      color: Colors.white,
-                                    ),
+                                          color: Colors.white,
+                                        ),
                                   ),
                                   Text(
                                     'Cook food in restaurants!',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                      color: Colors.white,
-                                    ),
+                                          color: Colors.white,
+                                        ),
                                   )
                                 ],
                               ),
@@ -149,38 +144,33 @@ class MainCardView1 extends StatelessWidget {
                         right: _paddingValue,
                       ),
                       child: Column(
-                        mainAxisAlignment:
-                        MainAxisAlignment.spaceEvenly,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           const Text(''),
                           InputChip(
                             onPressed: () {},
                             label: Padding(
                               padding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 16.0),
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
                               child: Text(
                                 'GET',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
                                     ?.copyWith(
-                                  color: Colors.blue,
-                                  fontWeight:
-                                  FontWeight.w700,
-                                ),
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
                             ),
                             backgroundColor: Colors.white,
                           ),
                           Text(
                             'In-app purchases',
-                            style: Theme.of(context)
-                                .textTheme
-                                .caption
-                                ?.copyWith(
-                              color: Colors.white,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.caption?.copyWith(
+                                      color: Colors.white,
+                                    ),
                           ),
                         ],
                       ),

@@ -2,10 +2,13 @@ library app_store_card_animation;
 
 import 'package:flutter/material.dart';
 
+import 'app_store_card_animation.dart';
 import 'src/fullscreen_page.dart';
 import 'src/hero_container.dart';
 import 'src/tween.dart';
 import 'src/types_def.dart';
+
+export 'src/decoration.dart';
 
 class AppStoreCard extends StatelessWidget {
   final _heroTag = UniqueKey();
@@ -13,15 +16,15 @@ class AppStoreCard extends StatelessWidget {
 
   final MainCardBuilder mainCardBuilder;
   final ContentCardBuilder contentCardBuilder;
-  final Color backgroundColor;
-  final double mainContentExpandedTopPadding;
+  final CloseButtonBuilder closeButtonBuilder;
+  final AppStoreCardDecoration decoration;
 
   AppStoreCard({
     Key? key,
     required this.mainCardBuilder,
     required this.contentCardBuilder,
-    this.mainContentExpandedTopPadding = 0,
-    this.backgroundColor = Colors.grey,
+    required this.closeButtonBuilder,
+    this.decoration = const AppStoreCardDecoration(),
   }) : super(key: key);
 
   @override
@@ -36,12 +39,15 @@ class AppStoreCard extends StatelessWidget {
           PageRouteBuilder(
             pageBuilder: (context, _, __) => FullscreenPage(
               heroTag: _heroTag,
-              heroContent: HeroContent(mainCardBuilder, contentCardBuilder,
-                  HeroContentState.fullscreen,
-                  backgroundColor: backgroundColor,
-                  scrollController: _scrollController,
-                  mainContentExpandedTopPadding: mainContentExpandedTopPadding,
-                  animation: const AlwaysStoppedAnimation(1)),
+              heroContent: HeroContent(
+                mainCardBuilder,
+                contentCardBuilder,
+                closeButtonBuilder,
+                state: HeroContentState.fullscreen,
+                decoration: decoration,
+                scrollController: _scrollController,
+                animation: const AlwaysStoppedAnimation(1),
+              ),
             ),
             transitionDuration: const Duration(milliseconds: 1200),
             reverseTransitionDuration: const Duration(milliseconds: 1400),
@@ -64,10 +70,10 @@ class AppStoreCard extends StatelessWidget {
             child: HeroContent(
               mainCardBuilder,
               contentCardBuilder,
-              backgroundColor: backgroundColor,
-              HeroContentState.flight,
+              closeButtonBuilder,
+              state: HeroContentState.flight,
+              decoration: decoration,
               scrollController: _scrollController,
-              mainContentExpandedTopPadding: mainContentExpandedTopPadding,
               animation: animation,
               flightDirection: flightDirection,
             ),
@@ -76,9 +82,9 @@ class AppStoreCard extends StatelessWidget {
         child: HeroContent(
           mainCardBuilder,
           contentCardBuilder,
-          HeroContentState.card,
-          backgroundColor: backgroundColor,
-          mainContentExpandedTopPadding: mainContentExpandedTopPadding,
+          closeButtonBuilder,
+          state: HeroContentState.card,
+          decoration: decoration,
           scrollController: _scrollController,
           animation: const AlwaysStoppedAnimation(0),
         ),

@@ -10,30 +10,31 @@ For general information about developing packages, see the Dart guide for
 and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/developing-packages).
 -->
+# App Store Card Animation
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/britov)
 
-## Features
+Widget which helps to create animation for open and close card like in AppStore "Today" tab.
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+Be free to create issue or discussion [here](https://github.com/britov/app_store_card_animation/issues).
 
-## Getting started
+## Demo
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+![](docs/demo/short-example.mp4)
+
+## Main value
+
+This package provide AppStoreCard which can open to full screen and do it with the same animation as card in AppSore. 
+
+I spent half of time to copy trajectory, fade, bouncing and etc.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Look [examples](`/example`) to make custom card
 
-```dart
-const like = 'sample';
-```
+## Future plans
 
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+- More documentation at Readme
+- Create useful templates for cards
+- Support closing fullscreen by slide
+- Switch color of DefaultCloseButton when scroll over main part

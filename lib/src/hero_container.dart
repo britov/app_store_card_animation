@@ -3,37 +3,39 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'decoration.dart';
 import 'scroll_builder.dart';
 import 'tween.dart';
 import 'types_def.dart';
 
+/// States of card
 enum HeroContentState { card, flight, fullscreen }
 
 class HeroContent extends AnimatedWidget {
   const HeroContent(
     this.mainCardBuilder,
     this.contentCardBuilder,
-    this.state, {
+    this.closeButtonBuilder, {
     Key? key,
+    required this.state,
     required this.animation,
     required this.scrollController,
-    required this.backgroundColor,
-    this.cardHeight = 400,
-    required this.mainContentExpandedTopPadding,
+    required this.decoration,
     this.flightDirection = HeroFlightDirection.push,
   }) : super(key: key, listenable: animation);
 
   final MainCardBuilder mainCardBuilder;
   final ContentCardBuilder contentCardBuilder;
+  final CloseButtonBuilder closeButtonBuilder;
   final HeroContentState state;
-  final Color backgroundColor;
+  final AppStoreCardDecoration decoration;
 
   final HeroFlightDirection flightDirection;
   final Animation<double> animation;
 
-  final double mainContentExpandedTopPadding;
-  final double cardHeight;
+  static const _defaultCardHeight = 400;
   static const _cardHeightExtend = 40.0;
+  static const _sizeAnimationDuration = 0.4;
   static const _closeButtonPadding = EdgeInsets.only(top: 32, right: 16);
 
   final ScrollController scrollController;
@@ -42,17 +44,18 @@ class HeroContent extends AnimatedWidget {
       ? const NeverScrollableScrollPhysics()
       : null;
 
-  final _sizeEnd = 0.4;
-
   @override
   Widget build(BuildContext context) {
     final sizeAnimationValue = flightDirection == HeroFlightDirection.push
-        ? math.min(1.0, animation.value / _sizeEnd)
-        : (1.0 - math.min(1.0, (1.0 - animation.value) / _sizeEnd));
+        ? math.min(1.0, animation.value / _sizeAnimationDuration)
+        : (1.0 -
+            math.min(1.0, (1.0 - animation.value) / _sizeAnimationDuration));
 
     var cardHeightExtendValue = _cardHeightExtend * sizeAnimationValue;
-    var topPadding = mainContentExpandedTopPadding * sizeAnimationValue;
-    final totalCardHeight = cardHeight + cardHeightExtendValue ;
+    var topPadding =
+        (decoration.fullscreenTopPadding ?? 0) * sizeAnimationValue;
+    final totalCardHeight =
+        (decoration.cardHeight ?? _defaultCardHeight) + cardHeightExtendValue;
     final h = (MediaQuery.of(context).size.height - totalCardHeight) *
             sizeAnimationValue +
         totalCardHeight;
@@ -63,7 +66,7 @@ class HeroContent extends AnimatedWidget {
         height: h,
         child: Container(
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: decoration.backgroundColor,
             borderRadius: const BorderRadius.all(
               Radius.circular(15),
             ),
@@ -102,29 +105,7 @@ class HeroContent extends AnimatedWidget {
               Positioned(
                 top: _closeButtonPadding.top,
                 right: _closeButtonPadding.right,
-                child: FadeTransition(
-                  opacity: animation,
-                  child: IconButton(
-                    onPressed: () {
-                      if (animation.value == 1) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: Container(
-                      height: 35,
-                      width: 35,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: const Icon(
-                        CupertinoIcons.multiply,
-                        size: 25,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                ),
+                child: closeButtonBuilder(context, animation),
               ),
             ],
           ),

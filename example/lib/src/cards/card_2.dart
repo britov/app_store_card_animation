@@ -92,6 +92,8 @@ class AppStoreAppTile extends StatelessWidget {
                           ),
                           Text(
                             'Videos, Music and Live Streams',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: Theme.of(context)
                                 .textTheme
                                 .labelMedium

@@ -1,9 +1,8 @@
-
 import 'package:app_store_card_animation/app_store_card_animation.dart';
 import 'package:example/src/cards/card_1.dart';
 import 'package:example/src/cards/card_2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 
 void main() {
   runApp(const MyApp());
@@ -38,7 +37,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(toolbarHeight: 0,),
+      appBar: AppBar(
+        toolbarHeight: 0,
+      ),
       backgroundColor: Colors.black,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 13),
@@ -46,13 +47,15 @@ class _MyHomePageState extends State<MyHomePage> {
           top: true,
           child: ListView(
             children: [
-              SizedBox(height: 10,),
+              const SizedBox(
+                height: 10,
+              ),
               const Card1(),
               const Card2(),
-              for (int i = 0; i < 10; i++)
-                const Card1(),
-
-              SizedBox(height: 10,),
+              for (int i = 0; i < 10; i++) const Card1(),
+              const SizedBox(
+                height: 10,
+              ),
             ],
           ),
         ),
@@ -66,25 +69,25 @@ class Card1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  Padding(
+    return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: AppStoreCard(
         mainCardBuilder: (
-            BuildContext context,
-            double animationValue,
-            double heightValue,
-            ) {
+          BuildContext context,
+          double animationValue,
+          double heightValue,
+        ) {
           return MainCardView1(
             animationValue: animationValue,
             heightValue: heightValue,
           );
         },
         contentCardBuilder: (
-            BuildContext context,
-            ScrollController scrollController,
-            ScrollPhysics? scrollPhysics,
-            double topScrollOffset,
-            ) {
+          BuildContext context,
+          ScrollController scrollController,
+          ScrollPhysics? scrollPhysics,
+          double topScrollOffset,
+        ) {
           return ListView(
             controller: scrollController,
             physics: scrollPhysics,
@@ -95,8 +98,7 @@ class Card1 extends StatelessWidget {
               ),
               for (int i = 0; i < 20; i++)
                 Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 18),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: TemplateCard(
                     index: i,
                     detailCard: true,
@@ -104,6 +106,9 @@ class Card1 extends StatelessWidget {
                 ),
             ],
           );
+        },
+        closeButtonBuilder: (context, animation) {
+          return DefaultCloseButton(animation: animation);
         },
       ),
     );
@@ -115,51 +120,55 @@ class Card2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  Padding(
+    return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: AppStoreCard(
-        backgroundColor: Color(0xFF1C1C1E),
-        mainContentExpandedTopPadding: 60, //MediaQuery.of(context).viewPadding.top,
+        decoration: const AppStoreCardDecoration(
+          backgroundColor: Color(0xFF1C1C1E),
+          fullscreenTopPadding: 60, //MediaQuery.of(context).viewPadding.top,
+        ),
         mainCardBuilder: (
-            BuildContext context,
-            double animationValue,
-            double heightValue,
-            ) {
+          BuildContext context,
+          double animationValue,
+          double heightValue,
+        ) {
           return MainCardView2(
             animationValue: animationValue,
             heightValue: heightValue,
           );
         },
         contentCardBuilder: (
-            BuildContext context,
-            ScrollController scrollController,
-            ScrollPhysics? scrollPhysics,
-            double topScrollOffset,
-            ) {
+          BuildContext context,
+          ScrollController scrollController,
+          ScrollPhysics? scrollPhysics,
+          double topScrollOffset,
+        ) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView(
               controller: scrollController,
-              physics: scrollPhysics ?? ClampingScrollPhysics(),
+              physics: scrollPhysics ?? const ClampingScrollPhysics(),
               padding: EdgeInsets.zero,
               children: [
                 SizedBox(
                   height: topScrollOffset,
                 ),
-                for (final card in [1,1,1,1,1,1,1,1,1,1,1])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                for (final card in [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
                     child: AppStoreAppTile(),
                   ),
               ],
             ),
           );
         },
+        closeButtonBuilder: (context, animation) {
+          return DefaultCloseButton(animation: animation);
+        },
       ),
     );
   }
 }
-
 
 class TemplateCard extends StatelessWidget {
   const TemplateCard({Key? key, required this.index, this.detailCard = false})
@@ -192,3 +201,38 @@ class TemplateCard extends StatelessWidget {
   }
 }
 
+class DefaultCloseButton extends StatelessWidget {
+  final Animation<double> animation;
+
+  const DefaultCloseButton({
+    Key? key,
+    required this.animation,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: animation,
+      child: IconButton(
+        onPressed: () {
+          if (animation.value == 1) {
+            Navigator.pop(context);
+          }
+        },
+        icon: Container(
+          height: 35,
+          width: 35,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: const Icon(
+            CupertinoIcons.multiply,
+            size: 25,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+}
