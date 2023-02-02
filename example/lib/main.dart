@@ -153,7 +153,7 @@ class Card2 extends StatelessWidget {
                 SizedBox(
                   height: topScrollOffset,
                 ),
-                for (final card in [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+                for (final _ in [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
                   const Padding(
                     padding: EdgeInsets.only(bottom: 8),
                     child: AppStoreAppTile(),
