@@ -1,6 +1,8 @@
 name: app_store_card_animation
 description: Animation for open and close cards as in AppStore
 version: 0.0.1
+repository: https://github.com/britov/app_store_card_animation
+homepage: https://github.com/britov/app_store_card_animation
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
